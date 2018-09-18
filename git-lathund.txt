@@ -1,0 +1,15 @@
+clone:
+git clone https://github.com/charlottesbrev/lt2316-h18-a1
+
+
+When documents have changed and I want to save them in git do this:
+git status   (lists what is changed)
+git add file1 (the first file that was changed)
+git add file2 (the second file that was changed)
+git status   (double check that all files are in checkin list)
+git commit -m "Some comment about the changes"
+
+
+When I want to save the git changes to github:
+git push origin master
+
