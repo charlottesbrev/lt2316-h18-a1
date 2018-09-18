@@ -13,3 +13,7 @@ git commit -m "Some comment about the changes"
 When I want to save the git changes to github:
 git push origin master
 
+
+jupyter:
+ssh -L8131:localhost:8131 gusdrach@mltgpu.flov.gu.se
+
