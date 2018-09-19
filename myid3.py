@@ -19,6 +19,104 @@ class DecisionTree:
         if load_from is not None:
             print("Loading from file object.")
 
+    def all_positive(self, Examples):
+       for x in Examples:
+          if x < 0:
+             return false
+       return true
+
+    def all_negative(self, ):
+       for x in Examples:
+          if x > 0:
+             return false
+       return true
+
+    def most_common_attribute_value(self, Examples, Target_Attribute):
+       # ?????????????????????????????
+       # how do we find the most common attribte value?
+       most_common = least_common_value
+       for e in Example:
+          if is_more_common(e, some_value)
+             most_common = e
+       return most_common
+
+    def best_classified_attribute(self, Examples, Attributes):
+       # ???????????????????????????????
+       # what is meant with a best classified attribute?
+       pass
+
+    def most_common_target_value(Examples, v_i):
+       # ???????????????????????????????
+       # what is meant with a most common target value?
+       # do we need more arguments?
+       pass
+
+    def subset_with_value(self, Examples, A, v_i):
+       out = []
+       for e in Examples:
+       # ???????????????????????????
+       # how should we determine what to add to the returning set 'out'?
+       # do we need 'A' for something or not?
+          if e == v_i:
+              out.append(e)
+       return out
+
+    def subtract_from_set(Attribute, A):
+       out = []
+       for a in Attribute:
+          if not exist(a, A):
+             out.append(a)
+       return out
+
+    def ID3(self, Examples, Target_Attribute, Attributes):
+        # Create a root node for the tree
+        Root = "" # Some class later
+        # If all examples are positive, return the single-node tree Root, with label = +.
+        if all_positive(Examples):
+           Root.label = '+'
+           return Root
+        # If all examples are negative, return the single-node tree Root, with label = -.
+        if all_negative(Examples):
+           Root.label = '-'
+           return Root
+        # If number of predicting attributes is empty, then Return the single node tree Root,
+        # with label = most common value of the target attribute in the examples.
+        if Attributes is empty:
+           Root.label = most_common_attribute_value(Examples, Target_Attribute)
+           return Root
+        # Otherwise Begin
+        #    A = The Attribute that best classifies examples.
+        #    Decision Tree attribute for Root = A
+           A = best_classified_attribute(Examples, Attributes)
+           Root.decision_tree_attribute = A
+        #    For each possible value, v_i, of A
+           for v_i in A:
+        #       Add a new tree branch below Root, corresponding to the test A = v_i.
+              tree_branch = ...
+        #       Let Examples(v_i) be the subset of examples that have the value v_i for A
+        #       If Examples(v_i) is empty
+        #          Then below this new branch add a leaf node with label = most common target value in the examples
+        #       Else
+        #          below this new branch add the subtree ID3(Examples(v_i), Target_Attribute, Attributes - {A})
+              if test(A, v_i):
+                 Root.branches += ...
+              # ????????????????????????????
+              # I don't know what test should do...
+              # should we just compare A to v_i? but is not v_i the elements of A?
+              sub = subset_with_value(Examples, A, v_i)
+              if sub is empty:
+                 tree_branch.leaf = ...
+                 tree_branch.leaf.label = most_common_target_value(Examples, v_i)
+              else:
+                 NewAttribute = subtract_from_set(Attribute, A) # Attribute - {A}
+                 # ???????????????????????????????
+                 # should all elements in A be excluded from Attribute in the row above?
+                 tree_branch.subtree = ID3(self, sub, Target_Attribute, NewAttribute)
+
+        # End
+        return Root
+
+
     def train(self, X, y, attrs, prune=False):
         # Doesn't return anything but rather trains a model via ID3
         # and stores the model result in the instance.
