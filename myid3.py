@@ -4,7 +4,7 @@
 # interface must work with the original test file.
 # You will of course remove the "pass".
 
-import os, sys
+import os, sys, math
 import numpy
 # You can add any other imports you need.
 
@@ -32,20 +32,21 @@ class DecisionTree:
        return true
 
     def most_common_attribute_value(self, Examples, Target_Attribute):
+       pass
        # ?????????????????????????????
        # how do we find the most common attribte value?
-       most_common = least_common_value
-       for e in Example:
-          if is_more_common(e, some_value)
-             most_common = e
-       return most_common
+       #most_common = least_common_value
+       #for e in Example:
+       #   if is_more_common(e, some_value)
+       #      most_common = e
+       #return most_common
 
     def best_classified_attribute(self, Examples, Attributes):
        # ???????????????????????????????
        # what is meant with a best classified attribute?
        pass
 
-    def most_common_target_value(Examples, v_i):
+    def most_common_target_value(self, Examples, v_i):
        # ???????????????????????????????
        # what is meant with a most common target value?
        # do we need more arguments?
@@ -61,7 +62,7 @@ class DecisionTree:
               out.append(e)
        return out
 
-    def subtract_from_set(Attribute, A):
+    def subtract_from_set(self, Attribute, A):
        out = []
        for a in Attribute:
           if not exist(a, A):
@@ -70,7 +71,7 @@ class DecisionTree:
 
     def ID3(self, Examples, Target_Attribute, Attributes):
         # Create a root node for the tree
-        Root = "" # Some class later
+        Root = {}
         # If all examples are positive, return the single-node tree Root, with label = +.
         if all_positive(Examples):
            Root.label = '+'
@@ -81,7 +82,7 @@ class DecisionTree:
            return Root
         # If number of predicting attributes is empty, then Return the single node tree Root,
         # with label = most common value of the target attribute in the examples.
-        if Attributes is empty:
+        if Attributes is None:
            Root.label = most_common_attribute_value(Examples, Target_Attribute)
            return Root
         # Otherwise Begin
@@ -116,8 +117,81 @@ class DecisionTree:
         # End
         return Root
 
+    def split(self, split, y):
+       split_set = set(split)
+       ret_list = []
+       for e in split_set:
+          cur_list = []
+          for i in range(len(y)):
+             if e == split[i]:
+                cur_list.append(y[i])
+          ret_list.append(cur_list)
+       return ret_list
 
+    # entropy
+    def ent(self, y):
+       set_y = set(y)
+       n = len(y)
+       E = 0
+       for s in set_y:
+          c = 0
+          for e in y:
+             if s == e:
+                c = c + 1
+          if c != 0:
+             E = E - c/n*math.log(c/n, 2)
+       return E
+
+
+    def ent_aft(self, y, splits):
+       n = len(y)
+       E_after = 0
+       for s in splits:
+          E_s = self.ent(s)
+          E_after = E_after + len(s)/n * E_s
+       return E_after
+
+    #      class: like                                in code: y
+    # attributes: cheese, sauce, spicy, vegetables    in code: attrs
+    #     values: mozza
     def train(self, X, y, attrs, prune=False):
+       # B = like
+       B = ['no', 'yes', 'yes', 'no', 'no', 'yes', 'yes', 'yes']
+       # A = cheeese
+       A = ['mozza', 'gouda', 'mozza', 'jarls', 'mozza', 'gouda', 'jarls', 'mozza']
+       self.split(A, B)
+       split_sauce = self.split(A, B)
+       print(split_sauce)
+       E_aft = self.ent_aft(B, split_sauce)
+       IG_aft = self.ent(B) - E_aft
+       print("IG %f" % (IG_aft, ))
+
+       # A = sauce
+       A = ['hllnds', 'tomato', 'tomato', 'bbq', 'bbq', 'tomato', 'hllnds', 'tomato']
+       split_sauce = self.split(A, B)
+       print(split_sauce)
+       E_aft = self.ent_aft(B, split_sauce)
+       IG_aft = self.ent(B) - E_aft
+       print("IG %f" % (IG_aft, ))
+
+       # A = spicy
+       A = ['yes', 'no', 'yes', 'no', 'yes', 'yes', 'yes', 'no']
+       self.split(A, B)
+       split_sauce = self.split(A, B)
+       print(split_sauce)
+       E_aft = self.ent_aft(B, split_sauce)
+       IG_aft = self.ent(B) - E_aft
+       print("IG %f" % (IG_aft, ))
+
+       # A = vegetables
+       A = ['no', 'no', 'no', 'no', 'yes', 'yes', 'yes', 'yes']
+       self.split(A, B)
+       split_sauce = self.split(A, B)
+       print(split_sauce)
+       E_aft = self.ent_aft(B, split_sauce)
+       IG_aft = self.ent(B) - E_aft
+       print("IG %f" % (IG_aft, ))
+
         # Doesn't return anything but rather trains a model via ID3
         # and stores the model result in the instance.
         # X is the training data, y are the corresponding classes the
@@ -129,7 +203,7 @@ class DecisionTree:
         #
         # Another bonus question is continuously-valued data. If you try this
         # you will need to modify predict and test.
-        pass
+       pass
 
     def predict(self, instance):
         # Returns the class of a given instance.
