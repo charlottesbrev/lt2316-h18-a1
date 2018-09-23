@@ -8,6 +8,13 @@ import os, sys, math
 import numpy
 # You can add any other imports you need.
 
+class Node:
+    def __init__(self, y, H):
+       self.y = y
+       self.H = H
+       self.SplitAttrib = None
+       self.Children = []
+
 class DecisionTree:
     def __init__(self, load_from=None):
         # Fill in any initialization information you might need.
@@ -19,117 +26,90 @@ class DecisionTree:
         if load_from is not None:
             print("Loading from file object.")
 
-    def all_positive(self, Examples):
-       for x in Examples:
-          if x < 0:
-             return false
-       return true
-
-    def all_negative(self, ):
-       for x in Examples:
-          if x > 0:
-             return false
-       return true
-
-    def most_common_attribute_value(self, Examples, Target_Attribute):
-       pass
-       # ?????????????????????????????
-       # how do we find the most common attribte value?
-       #most_common = least_common_value
-       #for e in Example:
-       #   if is_more_common(e, some_value)
-       #      most_common = e
-       #return most_common
-
-    def best_classified_attribute(self, Examples, Attributes):
-       # ???????????????????????????????
-       # what is meant with a best classified attribute?
-       pass
-
-    def most_common_target_value(self, Examples, v_i):
-       # ???????????????????????????????
-       # what is meant with a most common target value?
-       # do we need more arguments?
-       pass
-
-    def subset_with_value(self, Examples, A, v_i):
-       out = []
-       for e in Examples:
-       # ???????????????????????????
-       # how should we determine what to add to the returning set 'out'?
-       # do we need 'A' for something or not?
-          if e == v_i:
-              out.append(e)
-       return out
-
-    def subtract_from_set(self, Attribute, A):
-       out = []
-       for a in Attribute:
-          if not exist(a, A):
-             out.append(a)
-       return out
-
-    def ID3(self, Examples, Target_Attribute, Attributes):
+    def ID3(self, X, y, attribute_names):
         # Create a root node for the tree
-        Root = {}
         # If all examples are positive, return the single-node tree Root, with label = +.
-        if all_positive(Examples):
-           Root.label = '+'
-           return Root
-        # If all examples are negative, return the single-node tree Root, with label = -.
-        if all_negative(Examples):
-           Root.label = '-'
-           return Root
         # If number of predicting attributes is empty, then Return the single node tree Root,
         # with label = most common value of the target attribute in the examples.
-        if Attributes is None:
-           Root.label = most_common_attribute_value(Examples, Target_Attribute)
-           return Root
         # Otherwise Begin
         #    A = The Attribute that best classifies examples.
         #    Decision Tree attribute for Root = A
-           A = best_classified_attribute(Examples, Attributes)
-           Root.decision_tree_attribute = A
         #    For each possible value, v_i, of A
-           for v_i in A:
         #       Add a new tree branch below Root, corresponding to the test A = v_i.
-              tree_branch = ...
         #       Let Examples(v_i) be the subset of examples that have the value v_i for A
         #       If Examples(v_i) is empty
         #          Then below this new branch add a leaf node with label = most common target value in the examples
         #       Else
         #          below this new branch add the subtree ID3(Examples(v_i), Target_Attribute, Attributes - {A})
-              if test(A, v_i):
-                 Root.branches += ...
-              # ????????????????????????????
-              # I don't know what test should do...
-              # should we just compare A to v_i? but is not v_i the elements of A?
-              sub = subset_with_value(Examples, A, v_i)
-              if sub is empty:
-                 tree_branch.leaf = ...
-                 tree_branch.leaf.label = most_common_target_value(Examples, v_i)
-              else:
-                 NewAttribute = subtract_from_set(Attribute, A) # Attribute - {A}
-                 # ???????????????????????????????
-                 # should all elements in A be excluded from Attribute in the row above?
-                 tree_branch.subtree = ID3(self, sub, Target_Attribute, NewAttribute)
+        # End
 
+        # Create a root node for the tree
+        Root = Node(y, self.ent(y))
+        # If all examples are positive/negative, return the single-node tree Root, with label = +/-.
+        y_set = set(y)
+        if len(y_set) <= 1:
+           # Root.label = orsak ???
+           return Root
+        # If number of predicting attributes is empty, then Return the single node tree Root,
+        # with label = most common value of the target attribute in the examples.
+# !!!!!!!!!!!!!!!!!!!
+        if len(attribute_names) == 0:
+           Root.label = most_common_attribute_value(X, y)
+           return Root
+        # Otherwise Begin
+        #    A = The Attribute that best classifies examples.
+        #    Decision Tree attribute for Root = A
+# !!!!!!!!!!!!!!!!!!!
+        # 1 splitta på alla attribut...
+        # 2 ta reda på vilket som har högst IG
+        H_y = self.entropy(y)
+        best_split_y = None
+        best_split_attribute_name = None
+        max_IG = 0
+        for attribute_name in attribute_names:
+            split_data = X[attribute_name]
+            split_y = self.split(split_data, y)
+            H = self.entropy_after_split(y, split_y)
+            IG = H_y - H
+            if IG >= max_IG:
+               best_split_y = split_y
+               best_split_attribute_name = attribute_name
+               max_IG = IG
+        # 3 använd detta som split attribut
+        Root.SplitAttrib = best_split_attribute_name
+        #    For each possible value, v_i, of A
+        for v_y in best_split_y:
+        #       Add a new tree branch below Root, corresponding to the test A = v_i.
+        #       Let Examples(v_i) be the subset of examples that have the value v_i for A
+        #       If Examples(v_i) is empty
+        #          Then below this new branch add a leaf node with label = most common target value in the examples
+        #       Else
+        #          below this new branch add the subtree ID3(Examples(v_i), Target_Attribute, Attributes - {A})
+              if v_y == []:
+# !!!!!!!!!!!!!!!!!!!
+                 child_node = Node(v_y, self.entropy(v_y))
+                 #child_node.label = most_common_target_value(X, v_y)
+                 Root.Children.append(child_node)
+              else:
+# !!!!!!!!!!!!!!!!!!!
+                 attribute_names.remove(best_split_attribute_name) # Attributes - {A}
+                 Root.Children.append(self.ID3(self, X, y, attribute_names))
         # End
         return Root
 
-    def split(self, split, y):
-       split_set = set(split)
-       ret_list = []
-       for e in split_set:
-          cur_list = []
-          for i in range(len(y)):
-             if e == split[i]:
-                cur_list.append(y[i])
-          ret_list.append(cur_list)
-       return ret_list
+    def split(self, split_attr, y):
+        split_set = set(split_attr)
+        ret_list = []
+        for e in split_set:
+           cur_list = []
+           for i in range(len(y)):
+              if e == split_attr[i]:
+                 cur_list.append(y[i])
+           ret_list.append(cur_list)
+        return ret_list
 
     # entropy
-    def ent(self, y):
+    def entropy(self, y):
        set_y = set(y)
        n = len(y)
        E = 0
@@ -143,11 +123,11 @@ class DecisionTree:
        return E
 
 
-    def ent_aft(self, y, splits):
+    def entropy_after_split(self, y, splits):
        n = len(y)
        E_after = 0
        for s in splits:
-          E_s = self.ent(s)
+          E_s = self.entropy(s)
           E_after = E_after + len(s)/n * E_s
        return E_after
 
@@ -155,42 +135,43 @@ class DecisionTree:
     # attributes: cheese, sauce, spicy, vegetables    in code: attrs
     #     values: mozza
     def train(self, X, y, attrs, prune=False):
+       print(X)
        # B = like
        B = ['no', 'yes', 'yes', 'no', 'no', 'yes', 'yes', 'yes']
        # A = cheeese
        A = ['mozza', 'gouda', 'mozza', 'jarls', 'mozza', 'gouda', 'jarls', 'mozza']
        self.split(A, B)
        split_sauce = self.split(A, B)
-       print(split_sauce)
-       E_aft = self.ent_aft(B, split_sauce)
-       IG_aft = self.ent(B) - E_aft
-       print("IG %f" % (IG_aft, ))
+       E_aft = self.entropy_after_split(B, split_sauce)
+       IG_aft = self.entropy(B) - E_aft
+       #print(split_sauce)
+       #print("IG %f" % (IG_aft, ))
 
        # A = sauce
        A = ['hllnds', 'tomato', 'tomato', 'bbq', 'bbq', 'tomato', 'hllnds', 'tomato']
        split_sauce = self.split(A, B)
-       print(split_sauce)
-       E_aft = self.ent_aft(B, split_sauce)
-       IG_aft = self.ent(B) - E_aft
-       print("IG %f" % (IG_aft, ))
+       E_aft = self.entropy_after_split(B, split_sauce)
+       IG_aft = self.entropy(B) - E_aft
+       #print(split_sauce)
+       #print("IG %f" % (IG_aft, ))
 
        # A = spicy
        A = ['yes', 'no', 'yes', 'no', 'yes', 'yes', 'yes', 'no']
        self.split(A, B)
        split_sauce = self.split(A, B)
-       print(split_sauce)
-       E_aft = self.ent_aft(B, split_sauce)
-       IG_aft = self.ent(B) - E_aft
-       print("IG %f" % (IG_aft, ))
+       E_aft = self.entropy_after_split(B, split_sauce)
+       IG_aft = self.entropy(B) - E_aft
+       #print(split_sauce)
+       #print("IG %f" % (IG_aft, ))
 
        # A = vegetables
        A = ['no', 'no', 'no', 'no', 'yes', 'yes', 'yes', 'yes']
        self.split(A, B)
        split_sauce = self.split(A, B)
-       print(split_sauce)
-       E_aft = self.ent_aft(B, split_sauce)
-       IG_aft = self.ent(B) - E_aft
-       print("IG %f" % (IG_aft, ))
+       E_aft = self.entropy_after_split(B, split_sauce)
+       IG_aft = self.entropy(B) - E_aft
+       #print(split_sauce)
+       #print("IG %f" % (IG_aft, ))
 
         # Doesn't return anything but rather trains a model via ID3
         # and stores the model result in the instance.

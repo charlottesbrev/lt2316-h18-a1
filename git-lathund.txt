@@ -17,3 +17,11 @@ git push origin master
 jupyter:
 ssh -L8131:localhost:8131 gusdrach@mltgpu.flov.gu.se
 
+links:
+https://stackoverflow.com/questions/1859554/what-is-entropy-and-information-gain
+
+
+
+Y = X[row:row+1]
+Y = Y.append(X[row2:row2+1])
+
