@@ -10,16 +10,20 @@ import numpy as np
 from myid3 import DecisionTree # What you will write in the myid3.py file.
 
 # Loading the data.
-balancedata = pd.read_csv("balance-scale.data", header=None)
-balancedata = balancedata.sample(frac=1).reset_index(drop=True) #shuffla shuffla
+#balancedata = pd.read_csv("balance-scale.data", header=None)
+#balancedata = balancedata.sample(frac=1).reset_index(drop=True) #shuffla shuffla
+balancedata = pd.read_csv("lecture.data", header=None)
+#balancedata = balancedata.sample(frac=1).reset_index(drop=True) #shuffla shuffla
 
 # Making the data usable.
-cols = ["class", "left-weight", "left-distance", "right-weight", "right-distance"]
+#cols = ["class", "left-weight", "left-distance", "right-weight", "right-distance"]
+cols = ["like", "cheese", "sauce", "spicy", "vegetables"]
 balancedata.columns = cols
-y = balancedata["class"]
+y = balancedata["like"]
 X = balancedata[balancedata.columns[1:]]
 
-trainlen = int(len(X)*0.8)
+#trainlen = int(len(X)*0.8)
+trainlen = len(X)
 
 train_X = X[:trainlen]
 test_X = X[trainlen:]

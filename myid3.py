@@ -77,8 +77,11 @@ class DecisionTree:
                max_IG = IG
         # 3 använd detta som split attribut
         Root.SplitAttrib = best_split_attribute_name
+        # split X correctly here
+        best_X = self.split_X(X, y, best_split_attribute_name)
         #    For each possible value, v_i, of A
-        for v_y in best_split_y:
+        for i in range(best_split_y):
+              v_y = best_split_y[i]
         #       Add a new tree branch below Root, corresponding to the test A = v_i.
         #       Let Examples(v_i) be the subset of examples that have the value v_i for A
         #       If Examples(v_i) is empty
@@ -93,9 +96,46 @@ class DecisionTree:
               else:
 # !!!!!!!!!!!!!!!!!!!
                  attribute_names.remove(best_split_attribute_name) # Attributes - {A}
-                 Root.Children.append(self.ID3(self, X, y, attribute_names))
+                 Root.Children.append(self.ID3(self, best_X[i], v_y, attribute_names))
         # End
         return Root
+
+    def split_Xreal(self, X, y, split_attr):
+        split_set = set(split_attr)
+        #print(split_set)
+        ret_list = []
+        for e in split_set:
+           cur_matrix = None
+           for i in range(len(y)):
+              if e == split_attr[i]:
+                 #print("split %s %s" %(e,split_attr[i],))
+                 if cur_matrix is None:
+                     cur_matrix = X[i:i+1]
+                 else:
+                     cur_matrix = cur_matrix.append(X[i:i+1])
+                 #print(cur_matrix)
+           ret_list.append(cur_matrix)
+        return ret_list
+
+    def split_X(self, X, y, split_attr):
+        split_set = set(split_attr)
+        #print(split_set)
+        ret_list = []
+        for e in split_set:
+#           cur_matrix = None
+           cur_matrix = []
+           for i in range(len(y)):
+              if e == split_attr[i]:
+                 #print("split %s %s" %(e,split_attr[i],))
+                 if cur_matrix == None:
+#                     cur_matrix = X[i:i+1]
+                     cur_matrix = X[i]
+                 else:
+#                     cur_matrix = cur_matrix.append(X[i:i+1])
+                     cur_matrix.append(X[i])
+                 #print(cur_matrix)
+           ret_list.append(cur_matrix)
+        return ret_list
 
     def split(self, split_attr, y):
         split_set = set(split_attr)
@@ -135,43 +175,34 @@ class DecisionTree:
     # attributes: cheese, sauce, spicy, vegetables    in code: attrs
     #     values: mozza
     def train(self, X, y, attrs, prune=False):
-       print(X)
-       # B = like
-       B = ['no', 'yes', 'yes', 'no', 'no', 'yes', 'yes', 'yes']
-       # A = cheeese
-       A = ['mozza', 'gouda', 'mozza', 'jarls', 'mozza', 'gouda', 'jarls', 'mozza']
-       self.split(A, B)
-       split_sauce = self.split(A, B)
-       E_aft = self.entropy_after_split(B, split_sauce)
-       IG_aft = self.entropy(B) - E_aft
-       #print(split_sauce)
-       #print("IG %f" % (IG_aft, ))
+        #print(X)
+        #split_y = self.split(X['cheese'], y)
+        #E_aft = self.entropy_after_split(y, split_y)
+        #IG_aft = self.entropy(y) - E_aft
+        #print(split_y)
+        #print("IG %f" % (IG_aft, ))
 
-       # A = sauce
-       A = ['hllnds', 'tomato', 'tomato', 'bbq', 'bbq', 'tomato', 'hllnds', 'tomato']
-       split_sauce = self.split(A, B)
-       E_aft = self.entropy_after_split(B, split_sauce)
-       IG_aft = self.entropy(B) - E_aft
-       #print(split_sauce)
-       #print("IG %f" % (IG_aft, ))
+        split_y = self.split(X['sauce'], y)
+        E_aft = self.entropy_after_split(y, split_y)
+        IG_aft = self.entropy(y) - E_aft
+        X_test = self.split_Xreal(X, y, X['sauce'])
+        for x in X_test:
+           print(x)
+           print("******************")
+        print(split_y)
+        print("IG %f" % (IG_aft, ))
 
-       # A = spicy
-       A = ['yes', 'no', 'yes', 'no', 'yes', 'yes', 'yes', 'no']
-       self.split(A, B)
-       split_sauce = self.split(A, B)
-       E_aft = self.entropy_after_split(B, split_sauce)
-       IG_aft = self.entropy(B) - E_aft
-       #print(split_sauce)
-       #print("IG %f" % (IG_aft, ))
+        #split_y = self.split(X['spicy'], y)
+        #E_aft = self.entropy_after_split(y, split_y)
+        #IG_aft = self.entropy(y) - E_aft
+        #print(split_y)
+        #print("IG %f" % (IG_aft, ))
 
-       # A = vegetables
-       A = ['no', 'no', 'no', 'no', 'yes', 'yes', 'yes', 'yes']
-       self.split(A, B)
-       split_sauce = self.split(A, B)
-       E_aft = self.entropy_after_split(B, split_sauce)
-       IG_aft = self.entropy(B) - E_aft
-       #print(split_sauce)
-       #print("IG %f" % (IG_aft, ))
+        #split_y = self.split(X['vegetables'], y)
+        #E_aft = self.entropy_after_split(y, split_y)
+        #IG_aft = self.entropy(y) - E_aft
+        #print(split_y)
+        #print("IG %f" % (IG_aft, ))
 
         # Doesn't return anything but rather trains a model via ID3
         # and stores the model result in the instance.
@@ -184,7 +215,7 @@ class DecisionTree:
         #
         # Another bonus question is continuously-valued data. If you try this
         # you will need to modify predict and test.
-       pass
+        pass
 
     def predict(self, instance):
         # Returns the class of a given instance.
