@@ -22,8 +22,8 @@ balancedata.columns = cols
 y = balancedata["like"]
 X = balancedata[balancedata.columns[1:]]
 
-#trainlen = int(len(X)*0.8)
-trainlen = len(X)
+trainlen = int(len(X)*0.8)
+#trainlen = len(X)
 
 train_X = X[:trainlen]
 test_X = X[trainlen:]
@@ -36,7 +36,8 @@ print(train_y[:10])
 
 # Train the model using the basic features of DecisionTree
 dt = DecisionTree()
-dt.train(X, y, cols[1:])
+#dt.train(X, y, cols[1:])
+dt.train(train_X, train_y, cols[1:])
 print("The model looks like:")
 print(dt)
 print("Testing it out.")
