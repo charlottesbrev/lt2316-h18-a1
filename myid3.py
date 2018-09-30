@@ -7,24 +7,48 @@
 import os, sys, math
 import numpy
 # You can add any other imports you need.
+from sklearn.metrics import precision_score, recall_score, accuracy_score, f1_score, confusion_matrix
 
 class Node:
-    def __init__(self, y, H):
-       self.y = y
-       self.H = H
-       self.SplitAttrib = None
-       self.Children = []
+  def __init__(self, H):
+    self.H = H
+    self.children = []
+    self.label = None
+    self.split_name = None
+    self.attrib_value = None
 
-    def __str__(self):
-       s = ""
-       if self.SplitAttrib is None:
-           s = "L "
-       else:
-           s = "S " + self.SplitAttrib + " "
-       s = s + len(self.y).__str__()
-       for child in self.Children:
-          s = s + '[' + child.__str__() + ']'
-       return s
+  def rec_common_label(self, d):
+    if not self.label is None:
+      if self.label in d:
+        d[self.label] = d[self.label] + 1
+      else:
+        d[self.label] = 1
+    for c in self.children:
+      c.rec_common_label(d)
+
+  def most_common_label(self):
+    l_dict = dict()
+    self.rec_common_label(l_dict)
+    best_label = None
+    max_C = 0
+    for l in l_dict:
+      if l_dict[l] > max_C:
+        max_C = l_dict[l]
+        best_label = l
+    return best_label
+
+  def __str__(self):
+    s = "{ "
+    if not self.attrib_value is None:
+      s = s + "attrib_value = '" + str(self.attrib_value) + "' "
+    if not self.label is None:
+      s = s + "label = '" + str(self.label) + "' "
+    if not self.split_name is None:
+      s = s + "split_name = '" + str(self.split_name) + "' "
+    for c in self.children:
+      s = s + str(c)
+    s = s + "}"
+    return s
 
 class DecisionTree:
     def __init__(self, load_from=None):
@@ -36,111 +60,125 @@ class DecisionTree:
         print("Initializing classifier.")
         if load_from is not None:
             print("Loading from file object.")
+        self.RootNode = None
 
+    def most_common_value(self, y):
+      d = dict()
+      max_count = 0
+      max_y = None
+      for e in y:
+        if not e in d:
+          d[e] = 1
+        else:
+          d[e] = d[e] + 1
+        if d[e] > max_count:
+          max_count = d[e]
+          max_y = e
+      return max_y
+
+    # Create a root node for the tree
+    # If all examples are positive, return the single-node tree Root, with label = +.
+    # If number of predicting attributes is empty, then Return the single node tree Root,
+    # with label = most common value of the target attribute in the examples.
+    # Otherwise Begin
+    #    A = The Attribute that best classifies examples.
+    #    Decision Tree attribute for Root = A
+    #    For each possible value, v_i, of A
+    #       Add a new tree branch below Root, corresponding to the test A = v_i.
+    #       Let Examples(v_i) be the subset of examples that have the value v_i for A
+    #       If Examples(v_i) is empty
+    #          Then below this new branch add a leaf node with label = most common target value in the examples
+    #       Else
+    #          below this new branch add the subtree ID3(Examples(v_i), Target_Attribute, Attributes - {A})
+    # End
     def ID3(self, X, y, attribute_names):
         # Create a root node for the tree
-        # If all examples are positive, return the single-node tree Root, with label = +.
-        # If number of predicting attributes is empty, then Return the single node tree Root,
-        # with label = most common value of the target attribute in the examples.
-        # Otherwise Begin
-        #    A = The Attribute that best classifies examples.
-        #    Decision Tree attribute for Root = A
-        #    For each possible value, v_i, of A
-        #       Add a new tree branch below Root, corresponding to the test A = v_i.
-        #       Let Examples(v_i) be the subset of examples that have the value v_i for A
-        #       If Examples(v_i) is empty
-        #          Then below this new branch add a leaf node with label = most common target value in the examples
-        #       Else
-        #          below this new branch add the subtree ID3(Examples(v_i), Target_Attribute, Attributes - {A})
-        # End
-
-        # Create a root node for the tree
-        Root = Node(y, self.entropy(y))
+        Root = Node(self.entropy(y))
         # If all examples are positive/negative, return the single-node tree Root, with label = +/-.
         y_set = set(y)
         if len(y_set) <= 1:
-           # Root.label = orsak ???
+           Root.label = y[0]
            return Root
         # If number of predicting attributes is empty, then Return the single node tree Root,
         # with label = most common value of the target attribute in the examples.
         if len(attribute_names) == 0:
-           Root.label = most_common_attribute_value(X, y)
+           Root.label = self.most_common_value(y)
            return Root
         # Otherwise Begin
         #    A = The Attribute that best classifies examples.
         #    Decision Tree attribute for Root = A
-        # 1 splitta på alla attribut...
-        # 2 ta reda på vilket som har högst IG
-        H_y = self.entropy(y)
+        # 1 split all attributes...
+        # 2 find which split has the highest IG
         best_split_y = None
-        best_split_attribute_name = None
+        best_split_names = None
+        best_split_name = None
         max_IG = 0
-        #print('finding best attribute from: ', end='')
-        #print(attribute_names)
-        for attribute_name in attribute_names:
-            split_data = X[attribute_name]
-            split_y = self.split(split_data, y)
-            H = self.entropy_after_split(y, split_y)
-            IG = H_y - H
-            if IG >= max_IG:
-               best_split_y = split_y
-               best_split_attribute_name = attribute_name
-               max_IG = IG
-        # 3 använd detta som split attribut
-        Root.SplitAttrib = best_split_attribute_name
-        # split X correctly here
-        #print("best split %s" % (best_split_attribute_name, ))
-        best_X = self.split_X(X, y, X[best_split_attribute_name])
-
-        #print('Removing %s from: ' % (best_split_attribute_name, ), end='')
-        #print(attribute_names)
-        attribute_names.remove(best_split_attribute_name) # Attributes - {A}
-        #print('After removal: ', end='')
-        #print(attribute_names)
+        for name in attribute_names:
+          split_y, split_names = self.split(X[name], y)
+          H = self.entropy_after_split(y, split_y)
+          IG = Root.H - H
+          if IG > max_IG:
+            best_split_y = split_y
+            best_split_names = split_names
+            best_split_name = name
+            max_IG = IG
+        # 3 use the best as splitter
+        Root.split_name = best_split_name
+        # split matrix X correctly here
+        best_X = self.split_X(X, y, X[Root.split_name])
+        attribute_names.remove(Root.split_name) # Attributes - {A}
 
         #    For each possible value, v_i, of A
         for i in range(len(best_split_y)):
-              v_y = best_split_y[i]
+          v_y = best_split_y[i]
+          cur_X = best_X[i]
         #       Add a new tree branch below Root, corresponding to the test A = v_i.
         #       Let Examples(v_i) be the subset of examples that have the value v_i for A
         #       If Examples(v_i) is empty
         #          Then below this new branch add a leaf node with label = most common target value in the examples
         #       Else
         #          below this new branch add the subtree ID3(Examples(v_i), Target_Attribute, Attributes - {A})
-              if v_y == []:
-                 child_node = Node(v_y, self.entropy(v_y))
-                 #child_node.label = most_common_target_value(X, v_y)
-                 Root.Children.append(child_node)
-              else:
-                 Root.Children.append(self.ID3(best_X[i], v_y, attribute_names))
+          if len(v_y) == 0:
+            #raise ValueError()
+            child = Node(self.entropy(v_y))
+            child.attrib_value = best_split_names[i]
+            # y can be wrong here
+            child.label = self.most_common_value(y)
+            Root.children.append(child)
+          else:
+            child = self.ID3(cur_X, v_y, attribute_names)
+            child.attrib_value = best_split_names[i]
+            Root.children.append(child)
         # End
         return Root
 
     def split_X(self, X, y, split_attr):
-        split_set = set(split_attr)
-        ret_list = []
-        for e in split_set:
-           cur_matrix = None
-           for i in range(len(y)):
-              if e == split_attr[split_attr.index[i]]:
-                 row_i = X[X.index[i]:X.index[i]+1]
-                 if cur_matrix is None:
-                     cur_matrix = row_i
-                 else:
-                     cur_matrix = cur_matrix.append(row_i)
-           ret_list.append(cur_matrix)
-        return ret_list
+      split_set = set(split_attr)
+      matrix_list = []
+      for e in split_set:
+        cur_matrix = None
+        for i in range(len(y)):
+          if e == split_attr[split_attr.index[i]]:
+            row_i = X[i:i+1]
+            if cur_matrix is None:
+              cur_matrix = row_i
+            else:
+              cur_matrix = cur_matrix.append(row_i)
+        matrix_list.append(cur_matrix)
+      return matrix_list
 
     def split(self, split_attr, y):
-        split_set = set(split_attr)
-        ret_list = []
-        for e in split_set:
-           cur_list = []
-           for i in range(len(y)):
-              if e == split_attr[split_attr.index[i]]:
-                 cur_list.append(y[i])
-           ret_list.append(cur_list)
-        return ret_list
+      split_set = set(split_attr)
+      y_list = []
+      name_list = []
+      for e in split_set:
+        cur_y = []
+        for i in range(len(y)):
+          if e == split_attr[split_attr.index[i]]:
+            cur_y.append(y[i])
+        y_list.append(cur_y)
+        name_list.append(e)
+      return y_list, name_list
 
     def entropy(self, y):
        set_y = set(y)
@@ -178,45 +216,77 @@ class DecisionTree:
         #
         # Another bonus question is continuously-valued data. If you try this
         # you will need to modify predict and test.
-        split_y = self.split(X['sauce'], y)
-        E_aft = self.entropy_after_split(y, split_y)
-        IG_aft = self.entropy(y) - E_aft
-        X_test = self.split_X(X, y, X['sauce'])
-        for x in X_test:
-           print(x)
-           print("******************")
-        print(split_y)
-        print("IG %f" % (IG_aft, ))
-
         names = []
         for i in range(len(X.columns)):
-            names.append(X.columns[i])
+          names.append(X.columns[i])
         self.RootNode = self.ID3(X, y, names)
-        print(self.RootNode)
+
+    def pred_rec(self, node, X):
+      if node.split_name is None:
+        return node.label
+      else:
+        for c in node.children:
+          X_attr_name = X[node.split_name][X.index[0]]
+          if c.attrib_value == X_attr_name:
+            return self.pred_rec(c, X)
+        # if we reach here something which is not trained
+        r = node.most_common_label()
+        if r is None:
+          raise ValueError()
+        return r
 
     def predict(self, instance):
-        # Returns the class of a given instance.
-        # Raise a ValueError if the class is not trained.
-        pass
+      # Returns the class of a given instance.
+      # Raise a ValueError if the class is not trained.
+      if self.RootNode is None:
+        raise ValueError()
+
+      return self.pred_rec(self.RootNode, instance)
+      #return random.choice(['yes', 'no']) # return a crappy prediction
 
     def test(self, X, y, display=False):
-        # Returns a dictionary containing test statistics:
-        # accuracy, recall, precision, F1-measure, and a confusion matrix.
-        # If display=True, print the information to the console.
-        # Raise a ValueError if the class is not trained.
-        result = {'precision':None,
-                  'recall':None,
-                  'accuracy':None,
-                  'F1':None,
-                  'confusion-matrix':None}
-        if display:
-            print(result)
-        return result
+      # initially create stats for each y
+      predictions = []
+      #print(X.shape)
+      for i in range(X.shape[0]):
+        predictions.append(self.predict(X[i:i+1]))
+
+      #c = 0
+      #print("prediction <--> answer : result")
+      #for i in range(len(y)):
+      #  if predictions[i] == y[y.index[i]]:
+      #    v = 1
+      #    c = c + 1
+      #  else:
+      #    v = 0
+      #  print("%s <--> %s : %d" % (predictions[i], y[y.index[i]], v))
+      #print(c/len(y))
+
+      # Returns a dictionary containing test statistics:
+      # accuracy, recall, precision, F1-measure, and a confusion matrix.
+      # If display=True, print the information to the console.
+      # Raise a ValueError if the class is not trained.
+      #result = { 'precision': precision_score(y, predictions, average=None),
+      #     'recall': recall_score(y, predictions, average=None),
+      #     'accuracy': accuracy_score(y, predictions),
+      #     'F1': f1_score(y, predictions, average=None),
+      #     'confusion-matrix': confusion_matrix(y, predictions)}
+      result = {  'precision': precision_score(y, predictions, average=None),
+            'recall': recall_score(y, predictions, average=None),
+            'accuracy': accuracy_score(y, predictions),
+            'F1': f1_score(y, predictions, average=None),
+            'confusion-matrix': confusion_matrix(y, predictions)}
+      if display:
+        print(result)
+      return result
 
     def __str__(self):
-        # Returns a readable string representation of the trained
-        # decision tree or "ID3 untrained" if the model is not trained.
+      # Returns a readable string representation of the trained
+      # decision tree or "ID3 untrained" if the model is not trained.
+      if self.RootNode is None:
         return "ID3 untrained"
+      else:
+        return str(self.RootNode)
 
     def save(self, output):
         # 'output' is a file *object* (NOT necessarily a filename)
