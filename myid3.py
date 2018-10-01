@@ -12,10 +12,10 @@ from sklearn.metrics import precision_score, recall_score, accuracy_score, f1_sc
 class Node:
   def __init__(self, H):
     self.H = H
-    self.children = []
     self.label = None
     self.split_name = None
     self.attrib_value = None
+    self.children = []
 
   def rec_common_label(self, d):
     if not self.label is None:
@@ -60,7 +60,9 @@ class DecisionTree:
         print("Initializing classifier.")
         if load_from is not None:
             print("Loading from file object.")
-        self.RootNode = None
+            self.RootNode = self.load(load_from)
+        else:
+          self.RootNode = None
 
     def most_common_value(self, y):
       d = dict()
@@ -288,8 +290,73 @@ class DecisionTree:
       else:
         return str(self.RootNode)
 
+    def save_rec(self, node, output):
+      output.write(str(node.H) + "\n")
+      if node.label is None:
+        output.write("\n")
+      else:
+        output.write(str(node.label) + "\n")
+      if node.split_name is None:
+        output.write("\n")
+      else:
+        output.write(str(node.split_name) + "\n")
+      if node.attrib_value is None:
+        output.write("\n")
+      else:
+        output.write(str(node.attrib_value) + "\n")
+      output.write(str(len(node.children)) + "\n")
+      for c in node.children:
+        self.save_rec(c, output)
+
     def save(self, output):
-        # 'output' is a file *object* (NOT necessarily a filename)
-        # to which you will save the model in a manner that it can be
-        # loaded into a new DecisionTree instance.
-        pass
+      # 'output' is a file *object* (NOT necessarily a filename)
+      # to which you will save the model in a manner that it can be
+      # loaded into a new DecisionTree instance.
+      if self.RootNode is None:
+        return
+      self.save_rec(self.RootNode, output)
+
+    def parse_rec(self, node, content, line_nr):
+      node.H = 0.0
+      node.label = None
+      node.split_name = None
+      node.attrib_value = None
+      n_children = 0
+
+      h_str = content[line_nr + 0]
+      if h_str != '':
+        node.H = float(h_str)
+
+      label_str = content[line_nr + 1]
+      if label_str != '':
+        node.label = label_str
+
+      split_name_str = content[line_nr + 2]
+      if split_name_str != '':
+        node.split_name = split_name_str
+
+      attrib_value_str = content[line_nr + 3]
+      if attrib_value_str != '':
+        node.attrib_value = attrib_value_str
+
+      n_str = content[line_nr + 4]
+      if n_str != '':
+        n_children = int(n_str)
+
+      line_nr = line_nr + 5
+      for i in range(n_children):
+        child = Node(0.0)
+        line_nr = self.parse_rec(child, content, line_nr)
+        node.children.append(child)
+      return line_nr
+
+    def load(self, input):
+      content = input.readlines()
+      for i in range(len(content)):
+        content[i] = content[i].replace('\n', '')
+      # if number of rows is not divisible by 5 it's incompatible with this format
+      if len(content) % 5 != 0:
+        return None
+      node = Node(0.0) # 0.0 is a dummy value
+      self.parse_rec(node, content, 0)
+      return node
