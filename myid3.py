@@ -60,9 +60,9 @@ class DecisionTree:
         print("Initializing classifier.")
         if load_from is not None:
             print("Loading from file object.")
-            self.RootNode = self.load(load_from)
+            self.root_node = self.load(load_from)
         else:
-          self.RootNode = None
+          self.root_node = None
 
     def most_common_value(self, y):
       d = dict()
@@ -95,17 +95,17 @@ class DecisionTree:
     # End
     def ID3(self, X, y, attribute_names):
         # Create a root node for the tree
-        Root = Node(self.entropy(y))
+        root = Node(self.entropy(y))
         # If all examples are positive/negative, return the single-node tree Root, with label = +/-.
         y_set = set(y)
         if len(y_set) <= 1:
-           Root.label = y[0]
-           return Root
+           root.label = y[0]
+           return root
         # If number of predicting attributes is empty, then Return the single node tree Root,
         # with label = most common value of the target attribute in the examples.
         if len(attribute_names) == 0:
-           Root.label = self.most_common_value(y)
-           return Root
+           root.label = self.most_common_value(y)
+           return root
         # Otherwise Begin
         #    A = The Attribute that best classifies examples.
         #    Decision Tree attribute for Root = A
@@ -114,21 +114,21 @@ class DecisionTree:
         best_split_y = None
         best_split_names = None
         best_split_name = None
-        max_IG = 0
+        max_IG = -1.0
         for name in attribute_names:
           split_y, split_names = self.split(X[name], y)
           H = self.entropy_after_split(y, split_y)
-          IG = Root.H - H
+          IG = root.H - H
           if IG > max_IG:
             best_split_y = split_y
             best_split_names = split_names
             best_split_name = name
             max_IG = IG
         # 3 use the best as splitter
-        Root.split_name = best_split_name
+        root.split_name = best_split_name
         # split matrix X correctly here
-        best_X = self.split_X(X, y, X[Root.split_name])
-        attribute_names.remove(Root.split_name) # Attributes - {A}
+        best_X = self.split_X(X, y, X[root.split_name])
+        attribute_names.remove(root.split_name) # Attributes - {A}
 
         #    For each possible value, v_i, of A
         for i in range(len(best_split_y)):
@@ -140,19 +140,18 @@ class DecisionTree:
         #          Then below this new branch add a leaf node with label = most common target value in the examples
         #       Else
         #          below this new branch add the subtree ID3(Examples(v_i), Target_Attribute, Attributes - {A})
-          if len(v_y) == 0:
+          if v_y == None or len(v_y) == 0:
             #raise ValueError()
             child = Node(self.entropy(v_y))
             child.attrib_value = best_split_names[i]
-            # y can be wrong here
             child.label = self.most_common_value(y)
-            Root.children.append(child)
+            root.children.append(child)
           else:
             child = self.ID3(cur_X, v_y, attribute_names)
             child.attrib_value = best_split_names[i]
-            Root.children.append(child)
+            root.children.append(child)
         # End
-        return Root
+        return root
 
     def split_X(self, X, y, split_attr):
       split_set = set(split_attr)
@@ -221,7 +220,7 @@ class DecisionTree:
         names = []
         for i in range(len(X.columns)):
           names.append(X.columns[i])
-        self.RootNode = self.ID3(X, y, names)
+        self.root_node = self.ID3(X, y, names)
 
     def pred_rec(self, node, X):
       if node.split_name is None:
@@ -240,10 +239,10 @@ class DecisionTree:
     def predict(self, instance):
       # Returns the class of a given instance.
       # Raise a ValueError if the class is not trained.
-      if self.RootNode is None:
+      if self.root_node is None:
         raise ValueError()
 
-      return self.pred_rec(self.RootNode, instance)
+      return self.pred_rec(self.root_node, instance)
       #return random.choice(['yes', 'no']) # return a crappy prediction
 
     def test(self, X, y, display=False):
@@ -285,10 +284,10 @@ class DecisionTree:
     def __str__(self):
       # Returns a readable string representation of the trained
       # decision tree or "ID3 untrained" if the model is not trained.
-      if self.RootNode is None:
+      if self.root_node is None:
         return "ID3 untrained"
       else:
-        return str(self.RootNode)
+        return str(self.root_node)
 
     def save_rec(self, node, output):
       output.write(str(node.H) + "\n")
@@ -312,9 +311,9 @@ class DecisionTree:
       # 'output' is a file *object* (NOT necessarily a filename)
       # to which you will save the model in a manner that it can be
       # loaded into a new DecisionTree instance.
-      if self.RootNode is None:
+      if self.root_node is None:
         return
-      self.save_rec(self.RootNode, output)
+      self.save_rec(self.root_node, output)
 
     def parse_rec(self, node, content, line_nr):
       node.H = 0.0

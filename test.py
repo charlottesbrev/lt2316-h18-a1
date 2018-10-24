@@ -10,14 +10,17 @@ import numpy as np
 from myid3 import DecisionTree # What you will write in the myid3.py file.
 
 # Loading the data.
-balancedata = pd.read_csv("balance-scale.data", header=None)
+#balancedata = pd.read_csv("balance-scale.data", header=None)
+balancedata = pd.read_csv("kr-vs-kp.data", header=None)
 balancedata = balancedata.sample(frac=1).reset_index(drop=True) #shuffla shuffla
 
+column_count = 37
+
+cols = [("label " + str(x+1)) for x in range(column_count)]
+cols = cols[:column_count-1]
 # Making the data usable.
-cols = ["class", "left-weight", "left-distance", "right-weight", "right-distance"]
-balancedata.columns = cols
-y = balancedata["class"]
-X = balancedata[balancedata.columns[1:]]
+y = balancedata[column_count-1]
+X = balancedata[balancedata.columns[:column_count-1]]
 
 trainlen = int(len(X)*0.8)
 
@@ -32,7 +35,7 @@ print(train_y[:10])
 
 # Train the model using the basic features of DecisionTree
 dt = DecisionTree()
-dt.train(X, y, cols[1:])
+dt.train(X, y, cols)
 print("The model looks like:")
 print(dt)
 print("Testing it out.")
